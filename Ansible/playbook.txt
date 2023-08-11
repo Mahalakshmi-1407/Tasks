@@ -1,0 +1,88 @@
+Task:Write a playbook which calling roles and playbook
+
+[1st i created a role inside that im writing yaml file for each task]
+
+
+my_role/
+├── defaults/
+│   └── main.yml
+├── handlers/
+│   └── main.yml
+├── tasks/
+│   └── main.yml
+├── vars/
+│   └── main.yml
+
+
+
+1.ansible-galaxy init new_role
+2.tasks/main.yml
+
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+
+- name: Install Tomcat 9
+  apt:
+    name: tomcat9
+    state: present
+
+- name: Deploy sample.war to Tomcat webapps
+  copy:
+    src: "{{ war_source_path }}"
+    dest: "{{ war_dest_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Tomcat service
+
+- name: Start Tomcat service
+  systemd:
+    name: tomcat9
+    state: started
+
+3.vars/main.yml
+
+---
+war_source_path: /home/ubuntu/sample.war
+war_dest_path: /var/lib/tomcat9/webapps/sample.war
+
+4.handlers/main.yml
+
+---
+- name: Restart Tomcat service
+  systemd:
+    name: tomcat9
+    state: restarted
+
+5.vi deploy.yml.
+
+[I created one playbook and called the roles which i mentioned above]
+
+---
+- name: Use the role
+  hosts: all
+  become: yes
+  become_user: root
+
+  roles:
+    - new_role
+
+6.vi main.yml
+
+[Im calling a deploy.yml playbook inside main.yml playbook]
+
+---
+- name: Main playbook
+  hosts: all
+  tasks:
+    - ansible.builtin.debug:
+        msg: play1
+
+    - name: Include a playbook
+      ansible.builtin.import_playbook: newdeploy.yml
+
+6.ansible-playbook -i inventory main.yml
+
+
